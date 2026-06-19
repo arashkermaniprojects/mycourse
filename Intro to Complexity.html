@@ -1,0 +1,1276 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Introduction to Time Complexity — BCS 309</title>
+  <style>
+    :root{
+      --bg:#0b1020;--panel:rgba(255,255,255,0.05);--stroke:rgba(255,255,255,0.12);
+      --text:#e8ecff;--muted:#b7c0ff;
+      --blue:rgba(106,169,255,0.72);--green:rgba(100,240,200,0.65);
+      --yellow:rgba(255,209,102,0.78);--red:rgba(255,92,122,0.82);
+      --purple:rgba(199,125,255,0.80);
+    }
+    *{box-sizing:border-box}
+    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;
+      background:radial-gradient(1200px 800px at 20% 0%,#14204a 0%,var(--bg) 45%,#070a14 100%);
+      color:var(--text);}
+    .wrap{max-width:1200px;margin:16px auto;padding:0 14px 18px;display:grid;grid-template-columns:420px 1fr;gap:14px;}
+    @media(max-width:980px){.wrap{grid-template-columns:1fr;}}
+    .card{background:linear-gradient(180deg,rgba(255,255,255,0.06),rgba(255,255,255,0.03));
+      border:1px solid rgba(255,255,255,0.10);border-radius:18px;box-shadow:0 10px 30px rgba(0,0,0,0.25);overflow:hidden;}
+    .card h2{margin:0;padding:14px 14px 10px;font-size:16px;background:rgba(255,255,255,0.03);border-bottom:1px solid rgba(255,255,255,0.08);}
+    .controls{padding:12px 14px 14px;}
+    label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px;}
+    select,input[type="range"],button{width:100%;border-radius:12px;border:1px solid rgba(255,255,255,0.12);background:rgba(0,0,0,0.20);color:var(--text);padding:10px 12px;outline:none;}
+    input[type="range"]{padding:10px 0;}
+    button{cursor:pointer;font-weight:650;background:rgba(106,169,255,0.14);transition:transform .08s,background .12s;}
+    button:hover{background:rgba(106,169,255,0.22);}button:active{transform:scale(0.99);}
+    button.sec{background:rgba(255,255,255,0.08);}button.sec:hover{background:rgba(255,255,255,0.13);}
+    button.danger{background:rgba(255,92,122,0.18);}button.danger:hover{background:rgba(255,92,122,0.26);}
+    button.success{background:rgba(100,240,200,0.18);}button.success:hover{background:rgba(100,240,200,0.26);}
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;}
+    .btnRow{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:10px;}
+    .btnRow4{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:10px;}
+    .stat{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.10);}
+    .pill{border-radius:14px;border:1px solid rgba(255,255,255,0.10);background:rgba(0,0,0,0.18);padding:10px 12px;font-size:12px;color:var(--muted);display:flex;justify-content:space-between;gap:10px;}
+    .pill b{color:var(--text);font-weight:750;}
+    .viz{padding:14px;display:grid;gap:10px;}
+    svg{width:100%;background:rgba(0,0,0,0.18);border:1px solid rgba(255,255,255,0.10);border-radius:16px;}
+    .hint{font-size:12px;color:var(--muted);padding:0 14px 14px;}
+    .tabBar{display:flex;gap:0;border-bottom:1px solid rgba(255,255,255,0.10);overflow-x:auto;}
+    .tab{flex:1;padding:10px 6px;font-size:11px;font-weight:650;color:var(--muted);background:transparent;border:none;border-bottom:2px solid transparent;border-radius:0;cursor:pointer;transition:color .15s,border-color .15s,background .15s;white-space:nowrap;text-align:center;}
+    .tab:hover{color:var(--text);background:rgba(106,169,255,0.04);}
+    .tab.active{color:var(--text);border-bottom-color:rgba(106,169,255,0.7);background:rgba(106,169,255,0.06);}
+    .mp,.mv{display:block;}.mp.h,.mv.h{display:none;}
+
+    /* Code block */
+    .codeBlock{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;font-size:13px;background:rgba(0,0,0,0.25);border:1px solid rgba(255,255,255,0.10);border-radius:14px;padding:14px;line-height:1.7;overflow-x:auto;}
+    .cline{display:flex;gap:0;align-items:baseline;border-radius:6px;padding:2px 6px;transition:background .2s;}
+    .cline:hover{background:rgba(255,255,255,0.04);}
+    .cline.hi{background:rgba(255,209,102,0.15);}
+    .cline.correct{background:rgba(100,240,200,0.12);}
+    .cline.wrong{background:rgba(255,92,122,0.12);}
+    .cline .ln{color:rgba(183,192,255,0.4);min-width:24px;text-align:right;margin-right:10px;font-size:11px;user-select:none;}
+    .cline .code{flex:1;white-space:pre;}
+    .cline .freq{min-width:140px;text-align:right;font-weight:700;color:var(--yellow);cursor:pointer;transition:opacity .2s;}
+    .cline .freq.hidden{opacity:0;pointer-events:none;}
+    .cline .freq.revealed{opacity:1;pointer-events:none;}
+    .kw{color:#c77dff;}.cm{color:rgba(183,192,255,0.4);font-style:italic;}
+    .sumBox{border-radius:14px;border:1px solid rgba(255,255,255,0.10);background:rgba(0,0,0,0.18);padding:12px 14px;font-size:14px;line-height:1.8;margin-top:10px;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;}
+    .sumBox .term{display:inline-block;padding:2px 6px;border-radius:6px;transition:background .3s,transform .3s;margin:0 2px;}
+    .sumBox .term.hi{background:rgba(255,209,102,0.25);transform:scale(1.08);}
+    .sumBox .result{font-weight:800;color:var(--green);font-size:16px;}
+    .sumBox .bigO{font-weight:800;color:#ff9f43;font-size:18px;}
+
+    /* Math styling */
+    .m{font-family:Georgia,'Times New Roman',serif;font-style:italic;}
+    .mb{font-family:Georgia,'Times New Roman',serif;font-style:italic;font-weight:700;}
+
+    /* Concept box */
+    .conceptBox{border-radius:14px;border:1px solid rgba(106,169,255,0.2);background:rgba(106,169,255,0.06);padding:0;margin-bottom:10px;overflow:hidden;}
+    .conceptBox .cbHead{padding:10px 14px;cursor:pointer;font-size:13px;font-weight:700;color:rgba(106,169,255,0.9);display:flex;justify-content:space-between;align-items:center;user-select:none;}
+    .conceptBox .cbHead:hover{background:rgba(106,169,255,0.04);}
+    .conceptBox .cbBody{padding:0 14px 12px;font-size:12.5px;line-height:1.7;color:var(--text);display:none;}
+    .conceptBox.open .cbBody{display:block;}
+    .conceptBox .cbHead .arrow{transition:transform .2s;font-size:10px;}
+    .conceptBox.open .cbHead .arrow{transform:rotate(90deg);}
+    .ruleItem{padding:4px 0;border-bottom:1px solid rgba(255,255,255,0.05);}
+    .ruleItem:last-child{border-bottom:none;}
+    .ruleItem b{color:var(--yellow);}
+
+    /* Try-it input */
+    .freqInput{width:80px;padding:4px 8px;border-radius:8px;border:1px solid rgba(255,255,255,0.2);background:rgba(0,0,0,0.3);color:var(--text);font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;font-size:12px;text-align:center;outline:none;}
+    .freqInput:focus{border-color:rgba(106,169,255,0.5);}
+    .freqInput.ok{border-color:rgba(100,240,200,0.6);background:rgba(100,240,200,0.1);}
+    .freqInput.err{border-color:rgba(255,92,122,0.6);background:rgba(255,92,122,0.1);}
+    .freqCheck{font-size:14px;margin-left:4px;}
+
+    /* Trace panel */
+    .tracePanel{border-radius:14px;border:1px solid rgba(255,255,255,0.10);background:rgba(0,0,0,0.18);padding:12px;max-height:280px;overflow:auto;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;font-size:12px;}
+    .traceRow{display:flex;gap:12px;padding:3px 6px;border-radius:4px;transition:background .15s;}
+    .traceRow:last-child{background:rgba(106,169,255,0.1);}
+    .traceRow .ti{min-width:30px;color:var(--muted);}
+    .traceRow .tv{color:var(--yellow);font-weight:700;}
+    .traceRow .tc{color:var(--green);}
+
+    /* Derivation steps */
+    .deriveBox{border-radius:14px;border:1px solid rgba(255,255,255,0.10);background:rgba(0,0,0,0.14);padding:14px;margin-top:10px;}
+    .deriveBox h3{margin:0 0 8px;font-size:13px;color:var(--text);}
+    .dstep{padding:6px 10px;border-radius:8px;margin-bottom:6px;font-size:13px;line-height:1.6;border-left:3px solid rgba(106,169,255,0.5);background:rgba(0,0,0,0.12);opacity:0;max-height:0;overflow:hidden;transition:opacity .4s,max-height .4s,margin .3s,padding .3s;}
+    .dstep.show{opacity:1;max-height:200px;padding:8px 10px;margin-bottom:8px;}
+
+    /* Pattern reference */
+    .patRef{border-radius:14px;border:1px solid rgba(199,125,255,0.2);background:rgba(199,125,255,0.06);padding:0;margin-top:10px;overflow:hidden;}
+    .patRef .prHead{padding:10px 14px;cursor:pointer;font-size:13px;font-weight:700;color:rgba(199,125,255,0.9);display:flex;justify-content:space-between;align-items:center;user-select:none;}
+    .patRef .prBody{padding:0 14px 12px;font-size:12px;line-height:1.8;display:none;}
+    .patRef.open .prBody{display:block;}
+    .patRef .prHead .arrow{transition:transform .2s;font-size:10px;}
+    .patRef.open .prHead .arrow{transform:rotate(90deg);}
+    .patRow{display:flex;gap:12px;padding:4px 0;border-bottom:1px solid rgba(255,255,255,0.05);align-items:center;}
+    .patRow:last-child{border-bottom:none;}
+    .patCode{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;color:var(--yellow);flex:1;}
+    .patResult{font-weight:700;color:var(--green);min-width:80px;text-align:right;}
+
+    /* Challenge mode */
+    .challengePanel{border-radius:14px;border:1px solid rgba(255,209,102,0.2);background:rgba(255,209,102,0.05);padding:14px;margin-top:10px;}
+    .challengePanel h3{margin:0 0 10px;font-size:14px;color:var(--yellow);}
+    .choiceGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px;}
+    .choiceBtn{padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,0.15);background:rgba(0,0,0,0.2);color:var(--text);font-size:13px;font-weight:700;cursor:pointer;text-align:center;transition:all .15s;}
+    .choiceBtn:hover{background:rgba(106,169,255,0.15);border-color:rgba(106,169,255,0.4);}
+    .choiceBtn.right{background:rgba(100,240,200,0.2);border-color:rgba(100,240,200,0.5);color:rgba(100,240,200,0.95);}
+    .choiceBtn.wrongPick{background:rgba(255,92,122,0.2);border-color:rgba(255,92,122,0.5);color:rgba(255,92,122,0.95);}
+    .challengeFeedback{margin-top:10px;padding:10px 14px;border-radius:10px;font-size:13px;line-height:1.6;}
+    .challengeFeedback.ok{background:rgba(100,240,200,0.1);border:1px solid rgba(100,240,200,0.2);color:rgba(100,240,200,0.95);}
+    .challengeFeedback.nope{background:rgba(255,92,122,0.1);border:1px solid rgba(255,92,122,0.2);color:rgba(255,92,122,0.95);}
+
+    /* Growth table */
+    .growthTable{width:100%;border-collapse:separate;border-spacing:0 3px;font-size:13px;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;}
+    .growthTable th{padding:8px 6px;color:var(--muted);font-weight:700;font-size:12px;text-align:center;border-bottom:1px solid rgba(255,255,255,0.08);}
+    .growthTable td{padding:6px;text-align:center;border-radius:6px;transition:background .2s;}
+    .growthTable td.ok{background:rgba(100,240,200,0.1);color:rgba(100,240,200,0.9);}
+    .growthTable td.warn{background:rgba(255,209,102,0.1);color:rgba(255,209,102,0.9);}
+    .growthTable td.explode{background:rgba(255,92,122,0.12);color:rgba(255,92,122,0.9);}
+
+    /* Time panel */
+    .timePanel{border-radius:14px;border:1px solid rgba(100,240,200,0.2);background:rgba(100,240,200,0.04);padding:12px 14px;margin-top:10px;}
+    .timePanel h3{margin:0 0 8px;font-size:13px;color:rgba(100,240,200,0.9);}
+    .timeGrid{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;font-size:11px;text-align:center;}
+    .timeCell{padding:6px 4px;border-radius:8px;border:1px solid rgba(255,255,255,0.08);background:rgba(0,0,0,0.15);}
+    .timeCell .tcLabel{color:var(--muted);font-size:10px;margin-bottom:3px;}
+    .timeCell .tcVal{font-weight:700;font-size:12px;}
+    .timeCell.tOk .tcVal{color:rgba(100,240,200,0.9);}
+    .timeCell.tWarn .tcVal{color:rgba(255,209,102,0.9);}
+    .timeCell.tBad .tcVal{color:rgba(255,92,122,0.9);}
+
+    /* Asymptotic graph */
+    .notationBtns{display:flex;gap:6px;margin-bottom:10px;}
+    .notationBtn{flex:1;padding:8px;border-radius:10px;border:1px solid rgba(255,255,255,0.12);background:rgba(0,0,0,0.18);color:var(--muted);font-size:13px;font-weight:700;cursor:pointer;text-align:center;transition:all .15s;}
+    .notationBtn.active{background:rgba(106,169,255,0.15);border-color:rgba(106,169,255,0.4);color:var(--text);}
+    .defBox{border-radius:14px;border:1px solid rgba(255,255,255,0.10);background:rgba(0,0,0,0.14);padding:12px 14px;font-size:13px;line-height:1.7;margin-top:10px;}
+    .defBox .formal{font-family:Georgia,'Times New Roman',serif;font-style:italic;font-size:14px;}
+    .validBadge{display:inline-block;padding:4px 12px;border-radius:10px;font-size:12px;font-weight:700;margin-top:8px;}
+    .validBadge.yes{background:rgba(100,240,200,0.2);color:rgba(100,240,200,0.95);border:1px solid rgba(100,240,200,0.3);}
+    .validBadge.no{background:rgba(255,92,122,0.2);color:rgba(255,92,122,0.95);border:1px solid rgba(255,92,122,0.3);}
+
+    /* Relationship card */
+    .relCard{border-radius:14px;border:1px solid rgba(199,125,255,0.2);background:rgba(199,125,255,0.05);padding:12px 14px;margin-top:10px;font-size:12px;line-height:1.7;}
+    .relCard h4{margin:0 0 6px;font-size:13px;color:rgba(199,125,255,0.9);}
+
+    /* Quiz tab */
+    .ladder{display:flex;flex-direction:column;gap:0;}
+    .ladderStep{display:flex;align-items:center;gap:12px;padding:8px 14px;border-left:3px solid transparent;transition:background .15s;font-size:13px;}
+    .ladderStep:hover{background:rgba(255,255,255,0.03);}
+    .ladderStep .lColor{width:10px;height:10px;border-radius:50%;flex:0 0 10px;}
+    .ladderStep .lClass{font-weight:700;min-width:90px;font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;}
+    .ladderStep .lDesc{color:var(--muted);font-size:12px;flex:1;}
+    .ladderStep .lAlgo{font-size:11px;color:var(--yellow);min-width:140px;text-align:right;}
+
+    .cheatSection{margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.08);}
+    .cheatSection h3{margin:0 0 8px;font-size:14px;}
+    .cheatGrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+    .cheatCard{border-radius:12px;border:1px solid rgba(255,255,255,0.08);background:rgba(0,0,0,0.15);padding:10px 12px;font-size:12px;line-height:1.6;}
+    .cheatCard h4{margin:0 0 6px;font-size:12px;color:var(--blue);}
+
+    /* Quiz */
+    .quizPanel{margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.08);}
+    .quizPanel h3{margin:0 0 10px;font-size:14px;}
+    .quizQ{padding:12px 14px;border-radius:14px;border:1px solid rgba(255,255,255,0.10);background:rgba(0,0,0,0.15);margin-bottom:10px;}
+    .quizQ .qText{font-size:13px;margin-bottom:10px;line-height:1.5;}
+    .quizQ .qCode{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;font-size:12px;background:rgba(0,0,0,0.25);padding:8px 10px;border-radius:8px;margin:6px 0 10px;white-space:pre;overflow-x:auto;}
+    .quizOpts{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+    .quizOpt{padding:8px 12px;border-radius:10px;border:1px solid rgba(255,255,255,0.12);background:rgba(0,0,0,0.18);color:var(--text);font-size:13px;cursor:pointer;transition:all .15s;text-align:center;}
+    .quizOpt:hover{background:rgba(106,169,255,0.12);border-color:rgba(106,169,255,0.3);}
+    .quizOpt.chosen{border-color:rgba(106,169,255,0.5);background:rgba(106,169,255,0.15);}
+    .quizOpt.correct{background:rgba(100,240,200,0.2);border-color:rgba(100,240,200,0.5);color:rgba(100,240,200,0.95);}
+    .quizOpt.incorrect{background:rgba(255,92,122,0.15);border-color:rgba(255,92,122,0.4);color:rgba(255,92,122,0.95);}
+    .qFeedback{margin-top:8px;font-size:12px;padding:6px 10px;border-radius:8px;}
+    .qFeedback.ok{background:rgba(100,240,200,0.08);color:rgba(100,240,200,0.9);}
+    .qFeedback.nope{background:rgba(255,92,122,0.08);color:rgba(255,92,122,0.9);}
+    .scoreCard{padding:14px;border-radius:14px;border:1px solid rgba(106,169,255,0.3);background:rgba(106,169,255,0.08);text-align:center;margin-top:14px;}
+    .scoreCard .bigScore{font-size:36px;font-weight:800;color:var(--text);}
+    .scoreCard .scoreSub{font-size:13px;color:var(--muted);margin-top:4px;}
+
+    .axisLine{stroke:rgba(255,255,255,0.15);stroke-width:1;}
+    .gridLine{stroke:rgba(255,255,255,0.06);stroke-width:1;}
+    .toggleSwitch{width:36px;height:20px;border-radius:10px;background:rgba(255,255,255,0.12);position:relative;cursor:pointer;transition:background .2s;flex:0 0 36px;}
+    .toggleSwitch::after{content:'';position:absolute;width:16px;height:16px;border-radius:50%;background:var(--text);top:2px;left:2px;transition:transform .2s;}
+    .toggleSwitch.on{background:rgba(106,169,255,0.5);}.toggleSwitch.on::after{transform:translateX(16px);}
+
+    /* Mode toggle */
+    .modeToggle{display:flex;border-radius:10px;border:1px solid rgba(255,255,255,0.12);overflow:hidden;margin-bottom:10px;}
+    .modeToggle button{flex:1;border:none;border-radius:0;padding:8px;font-size:12px;font-weight:700;}
+    .modeToggle button.active{background:rgba(106,169,255,0.2);color:var(--text);}
+    .modeToggle button:not(.active){background:rgba(0,0,0,0.2);color:var(--muted);}
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <!-- LEFT PANEL -->
+  <div class="card">
+    <h2>Intro to Complexity</h2>
+    <div class="tabBar">
+      <button class="tab active" data-m="freq">Frequency Count</button>
+      <button class="tab" data-m="loops">Loop Analysis</button>
+      <button class="tab" data-m="growth">Growth Rates</button>
+      <button class="tab" data-m="asymp">Asymptotic</button>
+      <button class="tab" data-m="quiz">Review &amp; Quiz</button>
+    </div>
+
+    <!-- S1: Frequency Count -->
+    <div class="mp" id="p-freq"><div class="controls">
+      <div class="modeToggle">
+        <button id="fcModeLearn" class="active">Learn Mode</button>
+        <button id="fcModeTry">Try It Yourself</button>
+      </div>
+      <div class="row"><div>
+        <label for="fcEx">Example</label>
+        <select id="fcEx"><option value="sum">Sum(A, n)</option><option value="add">Add(A, B, n)</option><option value="rsum">RSum(A, n) — Recursive</option><option value="mult">Multiply(A, B, n)</option></select>
+      </div><div>
+        <label for="fcN"><span class="m">n</span> = <span id="fcNLbl">5</span></label>
+        <input id="fcN" type="range" min="1" max="20" value="5"/>
+      </div></div>
+      <div class="btnRow" id="fcLearnBtns">
+        <button id="fcReveal">Show Next</button>
+        <button id="fcRevealAll" class="sec">Reveal All</button>
+        <button id="fcReset" class="sec">Reset</button>
+      </div>
+      <div class="btnRow" id="fcTryBtns" style="display:none;">
+        <button id="fcCheck" class="success">Check Answers</button>
+        <button id="fcShowAnswers" class="sec">Show Answers</button>
+        <button id="fcTryReset" class="sec">Reset</button>
+      </div>
+      <div class="stat">
+        <div class="pill"><span id="fcStatLabel">Lines Revealed</span><b id="fcRevealed">0 / 0</b></div>
+        <div class="pill"><span>T(<span class="m">n</span>)</span><b id="fcTn">—</b></div>
+      </div>
+    </div>
+    <div class="hint">Click "Show Next" to reveal each line's frequency count step by step. Switch to "Try It Yourself" to practice.</div>
+    </div>
+
+    <!-- S2: Loop Analysis -->
+    <div class="mp h" id="p-loops"><div class="controls">
+      <div class="row"><div>
+        <label for="loopEx">Example</label>
+        <select id="loopEx">
+          <option value="0">Ex 1: i += 20</option>
+          <option value="1">Ex 2: Nested i,j to n</option>
+          <option value="2">Ex 3: j depends on i</option>
+          <option value="3">Ex 4: p = p + i</option>
+          <option value="4">Ex 5: i = i * 2</option>
+          <option value="5">Ex 6: i = i / 2</option>
+          <option value="6">Ex 7: n * log n</option>
+        </select>
+      </div><div>
+        <label for="loopN"><span class="m">n</span> = <span id="loopNLbl">16</span></label>
+        <input id="loopN" type="range" min="2" max="64" value="16"/>
+      </div></div>
+      <div class="btnRow4">
+        <button id="loopTrace">Trace It</button>
+        <button id="loopDerive">Derive It</button>
+        <button id="loopChallenge" class="success">Challenge Me</button>
+        <button id="loopReset" class="sec">Reset</button>
+      </div>
+      <div class="stat">
+        <div class="pill"><span>Iterations</span><b id="loopIters">—</b></div>
+        <div class="pill"><span>Complexity</span><b id="loopBigO">—</b></div>
+      </div>
+    </div></div>
+
+    <!-- S3: Growth Rates -->
+    <div class="mp h" id="p-growth"><div class="controls">
+      <label for="grN"><span class="m">n</span> = <span id="grNLbl">10</span></label>
+      <input id="grN" type="range" min="1" max="100" value="10"/>
+      <div style="margin-top:8px;display:flex;align-items:center;gap:8px;">
+        <div class="toggleSwitch" id="grLog"></div>
+        <span style="font-size:12px;color:var(--muted);">Log scale on chart</span>
+      </div>
+      <div style="margin-top:10px;">
+        <button id="grRace" class="success" style="width:100%;">Race!</button>
+      </div>
+    </div></div>
+
+    <!-- S4: Asymptotic -->
+    <div class="mp h" id="p-asymp"><div class="controls">
+      <div class="notationBtns">
+        <div class="notationBtn active" data-n="O">Big-O</div>
+        <div class="notationBtn" data-n="Om">&Omega;</div>
+        <div class="notationBtn" data-n="Th">&Theta;</div>
+      </div>
+      <div class="row"><div>
+        <label for="asFn"><span class="m">f</span>(<span class="m">n</span>)</label>
+        <select id="asFn">
+          <option value="3n+5">3n + 5</option>
+          <option value="2n2+3n+1">2n&sup2; + 3n + 1</option>
+          <option value="nlogn+10">n log n + 10</option>
+          <option value="n3-2n">n&sup3; - 2n</option>
+        </select>
+      </div><div>
+        <label for="asGn"><span class="m">g</span>(<span class="m">n</span>)</label>
+        <select id="asGn">
+          <option value="n">n</option>
+          <option value="n2">n&sup2;</option>
+          <option value="nlogn">n log n</option>
+          <option value="n3">n&sup3;</option>
+        </select>
+      </div></div>
+      <div class="row"><div>
+        <label for="asC"><span class="m">c</span> = <span id="asCLbl">4</span></label>
+        <input id="asC" type="range" min="0.5" max="20" step="0.1" value="4"/>
+      </div><div>
+        <label for="asN0"><span class="m">n</span><sub>0</sub> = <span id="asN0Lbl">1</span></label>
+        <input id="asN0" type="range" min="1" max="50" value="1"/>
+      </div></div>
+      <div id="asC2Row" class="row" style="display:none;"><div>
+        <label for="asC2"><span class="m">c</span><sub>2</sub> = <span id="asC2Lbl">6</span></label>
+        <input id="asC2" type="range" min="0.5" max="20" step="0.1" value="6"/>
+      </div><div></div></div>
+      <button id="asChallenge" class="success" style="margin-top:6px;">Challenge Me</button>
+    </div></div>
+
+    <!-- S5: Review & Quiz -->
+    <div class="mp h" id="p-quiz"><div class="controls">
+      <button id="quizStart" style="width:100%;margin-bottom:10px;">Start Quiz (10 Questions)</button>
+      <button id="quizNew" class="sec" style="width:100%;">New Quiz</button>
+      <div class="stat">
+        <div class="pill"><span>Score</span><b id="quizScore">— / 10</b></div>
+        <div class="pill"><span>Progress</span><b id="quizProg">0 / 10</b></div>
+      </div>
+    </div></div>
+  </div>
+
+  <!-- RIGHT PANEL -->
+  <div class="card">
+    <h2 id="vizTitle">Frequency Count Method. BCS 309. Dr. Arash Kermani</h2>
+    <div class="viz">
+      <!-- S1 Viz -->
+      <div class="mv" id="v-freq">
+        <div class="conceptBox" id="fcConceptBox">
+          <div class="cbHead" onclick="this.parentElement.classList.toggle('open')">
+            <span>What is the Frequency Count Method?</span><span class="arrow">&#9654;</span>
+          </div>
+          <div class="cbBody">
+            <p style="margin:0 0 8px;"><b>Goal:</b> Determine T(n), the total number of primitive operations a program executes as a function of input size n.</p>
+            <p style="margin:0 0 8px;"><b>Method:</b> Count how many times each statement executes, then sum all counts.</p>
+            <div style="font-size:12px;font-weight:700;color:var(--blue);margin:8px 0 4px;">Counting Rules:</div>
+            <div class="ruleItem"><b>Assignment</b> (x = 0;) &rarr; executes <b>1</b> time</div>
+            <div class="ruleItem"><b>Loop test</b> (i &lt; n) &rarr; executes <b>n+1</b> times (n passes + 1 fail)</div>
+            <div class="ruleItem"><b>Loop body</b> (inside for/while) &rarr; executes <b>n</b> times</div>
+            <div class="ruleItem"><b>Return</b> &rarr; executes <b>1</b> time</div>
+            <div class="ruleItem"><b>Nested loop body</b> &rarr; multiply outer &times; inner iterations</div>
+          </div>
+        </div>
+        <div class="codeBlock" id="fcCode"></div>
+        <div class="sumBox" id="fcSum" style="display:none;"></div>
+        <svg id="fcSvg" viewBox="0 0 1000 250" style="height:200px;display:none;" preserveAspectRatio="xMidYMid meet"></svg>
+      </div>
+
+      <!-- S2 Viz -->
+      <div class="mv h" id="v-loops">
+        <div class="conceptBox">
+          <div class="cbHead" onclick="this.parentElement.classList.toggle('open')">
+            <span>How to Analyze Loops</span><span class="arrow">&#9654;</span>
+          </div>
+          <div class="cbBody">
+            <p style="margin:0 0 6px;">Ask three questions about any loop:</p>
+            <div class="ruleItem"><b>1.</b> How does the loop variable change each iteration?</div>
+            <div class="ruleItem"><b>2.</b> When does the loop stop? (What's the termination condition?)</div>
+            <div class="ruleItem"><b>3.</b> How many iterations does that give as a function of n?</div>
+          </div>
+        </div>
+        <div class="codeBlock" id="loopCode"></div>
+        <div class="tracePanel" id="loopTracePanel" style="display:none;"></div>
+        <div class="deriveBox" id="loopDeriveBox" style="display:none;"></div>
+        <div class="challengePanel" id="loopChallengePanel" style="display:none;"></div>
+        <div class="patRef" id="loopPatRef">
+          <div class="prHead" onclick="this.parentElement.classList.toggle('open')">
+            <span>Pattern Reference Card</span><span class="arrow">&#9654;</span>
+          </div>
+          <div class="prBody">
+            <div class="patRow"><span class="patCode">i++ or i+=k</span><span class="patResult">O(n) or O(n/k)</span></div>
+            <div class="patRow"><span class="patCode">i *= 2</span><span class="patResult">O(log n)</span></div>
+            <div class="patRow"><span class="patCode">i /= 2</span><span class="patResult">O(log n)</span></div>
+            <div class="patRow"><span class="patCode">p += i (accumulator)</span><span class="patResult">O(&radic;n)</span></div>
+            <div class="patRow"><span class="patCode">Nested independent</span><span class="patResult">Multiply counts</span></div>
+            <div class="patRow"><span class="patCode">Nested dependent (j&lt;i)</span><span class="patResult">Sum the series</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- S3 Viz -->
+      <div class="mv h" id="v-growth">
+        <div style="overflow-x:auto;"><table class="growthTable" id="grTable"></table></div>
+        <div class="timePanel" id="grTimePanel">
+          <h3>Real-World Execution Time (1 &mu;s per operation)</h3>
+          <div class="timeGrid" id="grTimeGrid"></div>
+        </div>
+        <svg id="grSvg" viewBox="0 0 1000 350" style="height:300px;" preserveAspectRatio="xMidYMid meet"></svg>
+      </div>
+
+      <!-- S4 Viz -->
+      <div class="mv h" id="v-asymp">
+        <div class="conceptBox">
+          <div class="cbHead" onclick="this.parentElement.classList.toggle('open')">
+            <span>Understanding Asymptotic Notation</span><span class="arrow">&#9654;</span>
+          </div>
+          <div class="cbBody">
+            <div class="ruleItem"><b>Big-O (Upper Bound):</b> f(n) will <b>never grow faster</b> than c&middot;g(n). Like a speed limit &mdash; you can go slower, but never faster.</div>
+            <div class="ruleItem"><b>Big-&Omega; (Lower Bound):</b> f(n) will <b>always grow at least as fast</b> as c&middot;g(n). Like a minimum speed &mdash; you're guaranteed to go at least this fast.</div>
+            <div class="ruleItem"><b>Big-&Theta; (Tight Bound):</b> f(n) grows at <b>exactly the same rate</b> as g(n). Sandwiched between c&#8321;&middot;g(n) and c&#8322;&middot;g(n).</div>
+          </div>
+        </div>
+        <svg id="asSvg" viewBox="0 0 1000 450" style="height:370px;" preserveAspectRatio="xMidYMid meet"></svg>
+        <div class="defBox" id="asDef"></div>
+        <div id="asChallengePanel" style="display:none;"></div>
+        <div class="relCard">
+          <h4>Relationships Between Notations</h4>
+          <div class="ruleItem">If f(n) = &Theta;(g(n)), then f(n) = O(g(n)) <b>AND</b> f(n) = &Omega;(g(n))</div>
+          <div class="ruleItem">&Theta; is the intersection of O and &Omega; &mdash; both upper and lower bounds hold.</div>
+          <div class="ruleItem">O gives the <b>worst case</b> guarantee. &Omega; gives the <b>best case</b> guarantee. &Theta; gives the <b>exact</b> growth rate.</div>
+        </div>
+      </div>
+
+      <!-- S5 Viz -->
+      <div class="mv h" id="v-quiz">
+        <div style="font-size:14px;font-weight:700;margin-bottom:8px;">Complexity Hierarchy</div>
+        <div class="ladder" id="quizLadder"></div>
+        <div class="cheatSection">
+          <h3>Quick Reference Cheat Sheet</h3>
+          <div class="cheatGrid">
+            <div class="cheatCard">
+              <h4>Frequency Count Rules</h4>
+              <div>Assignment = 1</div>
+              <div>Loop comparison = n+1</div>
+              <div>Loop body = n</div>
+              <div>Nested body = outer &times; inner</div>
+              <div>Return = 1</div>
+            </div>
+            <div class="cheatCard">
+              <h4>Loop Patterns</h4>
+              <div>i++ &rarr; O(n)</div>
+              <div>i *= 2 &rarr; O(log n)</div>
+              <div>i /= 2 &rarr; O(log n)</div>
+              <div>p += i &rarr; O(&radic;n)</div>
+              <div>Nested = multiply</div>
+            </div>
+            <div class="cheatCard">
+              <h4>Simplification Rules</h4>
+              <div>Drop constants: 5n &rarr; O(n)</div>
+              <div>Drop lower terms: n&sup2;+n &rarr; O(n&sup2;)</div>
+              <div>Keep dominant term</div>
+              <div>log base doesn't matter</div>
+            </div>
+            <div class="cheatCard">
+              <h4>Notation Summary</h4>
+              <div>O: upper bound (&#8804;)</div>
+              <div>&Omega;: lower bound (&#8805;)</div>
+              <div>&Theta;: tight bound (=)</div>
+              <div>&Theta; = O &cap; &Omega;</div>
+            </div>
+          </div>
+        </div>
+        <div class="quizPanel" id="quizArea"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(()=>{
+const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const SVG_NS="http://www.w3.org/2000/svg";
+function svgEl(t,a={}){const e=document.createElementNS(SVG_NS,t);for(const[k,v]of Object.entries(a))e.setAttribute(k,String(v));return e;}
+function clearSvg(s){while(s.firstChild)s.removeChild(s.firstChild);}
+function fmtN(n){if(!isFinite(n))return"\u221E";if(n>1e15)return n.toExponential(2);if(n>1e6)return n.toExponential(2);if(Number.isInteger(n))return n.toLocaleString("en-US");return n.toFixed(2);}
+function syntaxHL(s){
+  return s.replace(/\b(for|while|if|return|Algorithm|else)\b/g,'<span class="kw">$1</span>')
+          .replace(/(\/\/.*)/g,'<span class="cm">$1</span>');
+}
+
+// ===================== MODULE SYSTEM =====================
+let activeM="freq";
+const MODS=["freq","loops","growth","asymp","quiz"];
+const TITLES={freq:"Frequency Count Method",loops:"Loop Analysis Workshop",growth:"Growth Rate Comparison",asymp:"Asymptotic Notation Visualizer",quiz:"Review & Quiz"};
+function switchM(id){
+  activeM=id;
+  document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("active",t.dataset.m===id));
+  MODS.forEach(m=>{
+    const p=document.getElementById("p-"+m),v=document.getElementById("v-"+m);
+    if(p)p.classList.toggle("h",m!==id);if(v)v.classList.toggle("h",m!==id);
+  });
+  document.getElementById("vizTitle").textContent=TITLES[id]+". BCS 309. Dr. Arash Kermani";
+  if(id==="freq")fcRender();else if(id==="loops")loopRender();else if(id==="growth")grRender();else if(id==="asymp")asRender();else if(id==="quiz")quizInit();
+}
+document.querySelectorAll(".tab").forEach(t=>t.addEventListener("click",()=>switchM(t.dataset.m)));
+
+// ===================== S1: FREQUENCY COUNT =====================
+const FC_EXAMPLES={
+  sum:{
+    title:"Sum(A, n)",
+    lines:[
+      {code:"Algorithm Sum(A, n)",freq:"",type:"header"},
+      {code:"{",freq:"",type:"brace"},
+      {code:"  S = 0;",freq:"1",answer:"1",desc:"1 assignment",type:"stmt"},
+      {code:"  for (i = 0; i < n; i++)",freq:"n+1",answer:"n+1",desc:"n+1 comparisons",type:"loop"},
+      {code:"  {",freq:"",type:"brace"},
+      {code:"    S = S + A[i];",freq:"n",answer:"n",desc:"n additions",type:"stmt"},
+      {code:"  }",freq:"",type:"brace"},
+      {code:"  return S;",freq:"1",answer:"1",desc:"1 return",type:"stmt"},
+      {code:"}",freq:"",type:"brace"},
+    ],
+    terms:["1","(n+1)","n","1"],
+    simplified:"2n + 3",
+    bigO:"O(n)",
+    evalT:n=>2*n+3,
+    lineEvals:[null,null,n=>1,n=>n+1,null,n=>n,null,n=>1,null],
+  },
+  add:{
+    title:"Add(A, B, n)",
+    lines:[
+      {code:"Algorithm Add(A, B, n)",freq:"",type:"header"},
+      {code:"{",freq:"",type:"brace"},
+      {code:"  for (i = 0; i < n; i++)",freq:"n+1",answer:"n+1",desc:"n+1 comparisons",type:"loop"},
+      {code:"  {",freq:"",type:"brace"},
+      {code:"    for (j = 0; j < n; j++)",freq:"n\u00D7(n+1)",answer:"n(n+1)",desc:"n \u00D7 (n+1) comparisons",type:"loop"},
+      {code:"    {",freq:"",type:"brace"},
+      {code:"      C[i][j] = A[i][j] + B[i][j];",freq:"n\u00D7n",answer:"n^2",desc:"n \u00D7 n additions",type:"stmt"},
+      {code:"    }",freq:"",type:"brace"},
+      {code:"  }",freq:"",type:"brace"},
+      {code:"}",freq:"",type:"brace"},
+    ],
+    terms:["(n+1)","n(n+1)","n\u00B2"],
+    simplified:"2n\u00B2 + 2n + 1",
+    bigO:"O(n\u00B2)",
+    evalT:n=>2*n*n+2*n+1,
+    lineEvals:[null,null,n=>n+1,null,n=>n*(n+1),null,n=>n*n,null,null,null],
+  },
+  rsum:{
+    title:"RSum(A, n) — Recursive",
+    lines:[
+      {code:"Algorithm RSum(A, n)",freq:"",type:"header"},
+      {code:"{",freq:"",type:"brace"},
+      {code:"  if (n <= 0)",freq:"1",answer:"1",desc:"1 comparison",type:"stmt"},
+      {code:"    return 0;",freq:"1",answer:"1",desc:"1 return (base case)",type:"stmt"},
+      {code:"  else",freq:"",type:"brace"},
+      {code:"    return RSum(A, n-1) + A[n];",freq:"T(n-1)+1",answer:"T(n-1)+1",desc:"recursive call + 1 addition",type:"stmt"},
+      {code:"}",freq:"",type:"brace"},
+    ],
+    terms:["1","1","T(n-1)+1"],
+    simplified:"T(n) = T(n-1) + 1 = n+1",
+    bigO:"O(n)",
+    evalT:n=>n+1,
+    lineEvals:[null,null,n=>1,n=>1,null,n=>Math.max(n-1,0)+1,null],
+  },
+  mult:{
+    title:"Multiply(A, B, n)",
+    lines:[
+      {code:"Algorithm Multiply(A, B, n)",freq:"",type:"header"},
+      {code:"{",freq:"",type:"brace"},
+      {code:"  for (i = 0; i < n; i++)",freq:"n+1",answer:"n+1",desc:"n+1 comparisons",type:"loop"},
+      {code:"  {",freq:"",type:"brace"},
+      {code:"    for (j = 0; j < n; j++)",freq:"n(n+1)",answer:"n(n+1)",desc:"n\u00D7(n+1)",type:"loop"},
+      {code:"    {",freq:"",type:"brace"},
+      {code:"      C[i][j] = 0;",freq:"n\u00B2",answer:"n^2",desc:"n\u00B2 assignments",type:"stmt"},
+      {code:"      for (k = 0; k < n; k++)",freq:"n\u00B2(n+1)",answer:"n^2(n+1)",desc:"n\u00B2\u00D7(n+1)",type:"loop"},
+      {code:"        C[i][j] += A[i][k]*B[k][j];",freq:"n\u00B3",answer:"n^3",desc:"n\u00B3 multiply-adds",type:"stmt"},
+      {code:"    }",freq:"",type:"brace"},
+      {code:"  }",freq:"",type:"brace"},
+      {code:"}",freq:"",type:"brace"},
+    ],
+    terms:["(n+1)","n(n+1)","n\u00B2","n\u00B2(n+1)","n\u00B3"],
+    simplified:"2n\u00B3 + 2n\u00B2 + 2n + 1",
+    bigO:"O(n\u00B3)",
+    evalT:n=>2*n*n*n+2*n*n+2*n+1,
+    lineEvals:[null,null,n=>n+1,null,n=>n*(n+1),null,n=>n*n,n=>n*n*(n+1),n=>n*n*n,null,null,null],
+  }
+};
+
+let fcEx="sum",fcRevealIdx=0,fcTryMode=false;
+const fcExSel=document.getElementById("fcEx"),fcNSlider=document.getElementById("fcN"),fcNLbl=document.getElementById("fcNLbl");
+const fcCodeEl=document.getElementById("fcCode"),fcSumEl=document.getElementById("fcSum"),fcSvgEl=document.getElementById("fcSvg");
+
+document.getElementById("fcModeLearn").addEventListener("click",()=>{fcTryMode=false;document.getElementById("fcModeLearn").classList.add("active");document.getElementById("fcModeTry").classList.remove("active");document.getElementById("fcLearnBtns").style.display="";document.getElementById("fcTryBtns").style.display="none";document.getElementById("fcStatLabel").textContent="Lines Revealed";fcRevealIdx=0;fcRender();});
+document.getElementById("fcModeTry").addEventListener("click",()=>{fcTryMode=true;document.getElementById("fcModeTry").classList.add("active");document.getElementById("fcModeLearn").classList.remove("active");document.getElementById("fcLearnBtns").style.display="none";document.getElementById("fcTryBtns").style.display="";document.getElementById("fcStatLabel").textContent="Score";fcRender();});
+fcExSel.addEventListener("change",()=>{fcEx=fcExSel.value;fcRevealIdx=0;fcRender();});
+fcNSlider.addEventListener("input",()=>{fcNLbl.textContent=fcNSlider.value;if(!fcTryMode)fcRenderBars();});
+document.getElementById("fcReveal").addEventListener("click",fcRevealNext);
+document.getElementById("fcRevealAll").addEventListener("click",()=>{const ex=FC_EXAMPLES[fcEx];fcRevealIdx=ex.lines.filter(l=>l.freq).length;fcRender();});
+document.getElementById("fcReset").addEventListener("click",()=>{fcRevealIdx=0;fcRender();});
+document.getElementById("fcCheck").addEventListener("click",fcCheckAnswers);
+document.getElementById("fcShowAnswers").addEventListener("click",()=>{fcRevealIdx=999;fcTryMode=false;document.getElementById("fcModeLearn").classList.add("active");document.getElementById("fcModeTry").classList.remove("active");document.getElementById("fcLearnBtns").style.display="";document.getElementById("fcTryBtns").style.display="none";fcRender();});
+document.getElementById("fcTryReset").addEventListener("click",()=>{fcRender();});
+
+function fcRender(){
+  const ex=FC_EXAMPLES[fcEx];
+  fcCodeEl.innerHTML="";
+  const countable=ex.lines.filter(l=>l.freq);
+  let revealed=0;
+
+  if(fcTryMode){
+    ex.lines.forEach((l,i)=>{
+      const div=document.createElement("div");
+      div.className="cline";
+      div.innerHTML='<span class="ln">'+(i+1)+'</span><span class="code">'+syntaxHL(l.code)+'</span>';
+      if(l.freq){
+        div.innerHTML+='<span style="min-width:140px;text-align:right;display:flex;align-items:center;justify-content:flex-end;gap:4px;"><input class="freqInput" data-answer="'+l.answer+'" placeholder="?"/><span class="freqCheck"></span></span>';
+      }
+      fcCodeEl.appendChild(div);
+    });
+    fcSumEl.style.display="none";fcSvgEl.style.display="none";
+    document.getElementById("fcRevealed").textContent="— / "+countable.length;
+    document.getElementById("fcTn").textContent="\u2014";
+  } else {
+    ex.lines.forEach((l,i)=>{
+      const div=document.createElement("div");
+      div.className="cline"+(l.freq&&revealed<fcRevealIdx?" hi":"");
+      div.innerHTML='<span class="ln">'+(i+1)+'</span><span class="code">'+syntaxHL(l.code)+'</span>';
+      if(l.freq){
+        const isRevealed=revealed<fcRevealIdx;
+        div.innerHTML+='<span class="freq '+(isRevealed?"revealed":"hidden")+'">'+( l.desc||l.freq)+'</span>';
+        revealed++;
+      }
+      fcCodeEl.appendChild(div);
+    });
+    document.getElementById("fcRevealed").textContent=Math.min(fcRevealIdx,countable.length)+" / "+countable.length;
+    const allRevealed=fcRevealIdx>=countable.length;
+    if(allRevealed){
+      fcSumEl.style.display="block";
+      fcSumEl.innerHTML='<div style="margin-bottom:6px;color:var(--muted);font-size:12px;">Summing all frequencies:</div>';
+      fcSumEl.innerHTML+='<div>T(<span class="m">n</span>) = '+ex.terms.map(t=>'<span class="term">'+t+'</span>').join(" + ")+'</div>';
+      fcSumEl.innerHTML+='<div style="margin-top:6px;">T(<span class="m">n</span>) = <span class="result">'+ex.simplified+'</span></div>';
+      fcSumEl.innerHTML+='<div style="margin-top:4px;">Dominant term &rArr; <span class="bigO">'+ex.bigO+'</span></div>';
+      document.getElementById("fcTn").textContent=ex.simplified;
+      fcSvgEl.style.display="block";fcRenderBars();
+    } else {
+      fcSumEl.style.display="none";fcSvgEl.style.display="none";
+      document.getElementById("fcTn").textContent="\u2014";
+    }
+  }
+}
+
+function fcRevealNext(){
+  const ex=FC_EXAMPLES[fcEx];
+  const countable=ex.lines.filter(l=>l.freq);
+  if(fcRevealIdx<countable.length)fcRevealIdx++;
+  fcRender();
+}
+
+function fcCheckAnswers(){
+  const inputs=fcCodeEl.querySelectorAll(".freqInput");
+  let correct=0,total=inputs.length;
+  inputs.forEach(inp=>{
+    const ans=inp.dataset.answer.replace(/\s/g,"");
+    const val=inp.value.replace(/\s/g,"");
+    const check=inp.parentElement.querySelector(".freqCheck");
+    const cline=inp.closest(".cline");
+    if(!val){check.textContent="";cline.className="cline";return;}
+    if(normalizeFreq(val)===normalizeFreq(ans)){
+      inp.classList.add("ok");inp.classList.remove("err");
+      check.textContent="\u2705";cline.className="cline correct";correct++;
+    } else {
+      inp.classList.add("err");inp.classList.remove("ok");
+      check.textContent="\u274C";cline.className="cline wrong";
+    }
+  });
+  document.getElementById("fcRevealed").textContent=correct+" / "+total;
+}
+
+function normalizeFreq(s){
+  return s.toLowerCase().replace(/\s+/g,"").replace(/\*/g,"").replace(/x/g,"").replace(/×/g,"");
+}
+
+function fcRenderBars(){
+  clearSvg(fcSvgEl);
+  const ex=FC_EXAMPLES[fcEx];
+  const n=parseInt(fcNSlider.value);
+  const W=1000,H=250,padL=40,padR=20,padT=20,padB=40;
+  const evals=ex.lineEvals.filter(e=>e!==null);
+  const vals=evals.map(fn=>fn(n));
+  const labels=ex.lines.filter(l=>l.freq).map(l=>l.code.trim().substring(0,20));
+  const maxV=Math.max(...vals,1);
+  const barW=(W-padL-padR)/(vals.length*2);
+
+  vals.forEach((v,i)=>{
+    const x=padL+i*barW*2+barW/2;
+    const h=(v/maxV)*(H-padT-padB);
+    const y=padT+(H-padT-padB)-h;
+    fcSvgEl.appendChild(svgEl("rect",{x:x,y:y,width:barW,height:h,fill:"rgba(106,169,255,0.6)",rx:6}));
+    const t=svgEl("text",{x:x+barW/2,y:y-6,"text-anchor":"middle","font-size":"12","font-weight":"700",fill:"var(--text)"});
+    t.textContent=v;fcSvgEl.appendChild(t);
+    const lb=svgEl("text",{x:x+barW/2,y:H-padB+16,"text-anchor":"middle","font-size":"10",fill:"var(--muted)",transform:"rotate(-15,"+(x+barW/2)+","+(H-padB+16)+")"});
+    lb.textContent=labels[i]||"line";fcSvgEl.appendChild(lb);
+  });
+  const totalLbl=svgEl("text",{x:W-padR,y:padT+14,"text-anchor":"end","font-size":"14","font-weight":"700",fill:"rgba(255,159,67,0.9)"});
+  totalLbl.textContent="T("+n+") = "+ex.evalT(n);fcSvgEl.appendChild(totalLbl);
+}
+
+// ===================== S2: LOOP ANALYSIS =====================
+const LOOP_EXAMPLES=[
+  {title:"Ex 1: Increment by constant",
+    code:"for (i = 1; i < n; i = i + 20)\n{\n    stmt;\n}",
+    trace:(n)=>{const r=[];for(let i=1;i<n;i+=20)r.push({i:i,op:1});return r;},
+    derive:["The loop variable <b>i</b> starts at 1 and increases by 20 each iteration.","Iteration sequence: i = 1, 21, 41, 61, ...","The loop stops when i &ge; n.","After <b>k</b> iterations: i = 1 + 20k","Loop stops when 1 + 20k &ge; n &rArr; k &ge; (n-1)/20","Number of iterations: k = &lceil;(n-1)/20&rceil; &asymp; <b>n/20</b>","T(n) = n/20 &rArr; <span class='bigO'>O(n)</span>"],
+    iters:n=>Math.ceil((n-1)/20),bigO:"O(n)"},
+  {title:"Ex 2: Nested loops (independent)",
+    code:"for (i = 0; i < n; i++)\n{\n    for (j = 0; j < n; j++)\n    {\n        stmt;\n    }\n}",
+    trace:(n)=>{const r=[];for(let i=0;i<n;i++)for(let j=0;j<n;j++)r.push({i:i,j:j,op:1});return r;},
+    derive:["Outer loop: i goes from 0 to n-1 &rArr; <b>n</b> iterations.","Inner loop: for each i, j goes from 0 to n-1 &rArr; <b>n</b> iterations.","The inner loop is independent of i (both run n times).","Total iterations of stmt = n &times; n = <b>n&sup2;</b>","T(n) = (n+1) + n&times;(n+1) + n&sup2; = 2n&sup2; + 2n + 1","Dominant term: n&sup2; &rArr; <span class='bigO'>O(n&sup2;)</span>"],
+    iters:n=>n*n,bigO:"O(n\u00B2)"},
+  {title:"Ex 3: Dependent inner loop",
+    code:"for (i = 0; i < n; i++)\n{\n    for (j = 0; j < i; j++)\n    {\n        stmt;\n    }\n}",
+    trace:(n)=>{const r=[];for(let i=0;i<n;i++)for(let j=0;j<i;j++)r.push({i:i,j:j,op:1});return r;},
+    derive:["Outer loop: i = 0, 1, 2, ..., n-1 &rArr; n iterations.","Inner loop: j goes from 0 to <b>i-1</b> (depends on i!).","When i=0: 0 iterations. When i=1: 1 iteration. When i=2: 2 iterations. ...","Total = 0 + 1 + 2 + 3 + ... + (n-1)","This is an arithmetic series: &sum; = <b>n(n-1)/2</b>","= n&sup2;/2 - n/2 &rArr; <span class='bigO'>O(n&sup2;)</span>"],
+    iters:n=>{let c=0;for(let i=0;i<n;i++)c+=i;return c;},bigO:"O(n\u00B2)"},
+  {title:"Ex 4: Accumulator condition",
+    code:"p = 0;\nfor (i = 1; p <= n; i++)\n{\n    p = p + i;\n}",
+    trace:(n)=>{const r=[];let p=0;for(let i=1;p<=n;i++){p+=i;r.push({i:i,p:p,op:1});}return r;},
+    derive:["p accumulates: after k iterations, p = 1 + 2 + 3 + ... + k = <b>k(k+1)/2</b>.","The loop stops when p > n.","So we need: k(k+1)/2 > n.","Approximately: k&sup2;/2 > n &rArr; k > &radic;(2n) &rArr; k &asymp; <b>&radic;n</b>","T(n) &asymp; &radic;(2n) &rArr; <span class='bigO'>O(&radic;n)</span>"],
+    iters:n=>{let p=0,k=0;for(let i=1;p<=n;i++){p+=i;k++;}return k;},bigO:"O(\u221An)"},
+  {title:"Ex 5: Multiplicative (doubling)",
+    code:"for (i = 1; i < n; i = i * 2)\n{\n    stmt;\n}",
+    trace:(n)=>{const r=[];for(let i=1;i<n;i*=2)r.push({i:i,op:1});return r;},
+    derive:["i starts at 1 and doubles each iteration: i = 1, 2, 4, 8, 16, ...","After k iterations: i = 2<sup>k</sup>.","Loop stops when 2<sup>k</sup> &ge; n.","Taking log<sub>2</sub> of both sides: k &ge; log<sub>2</sub>(n).","Number of iterations: k = &lfloor;log<sub>2</sub>(n)&rfloor;","T(n) = log<sub>2</sub>(n) &rArr; <span class='bigO'>O(log n)</span>"],
+    iters:n=>{let c=0;for(let i=1;i<n;i*=2)c++;return c;},bigO:"O(log n)"},
+  {title:"Ex 6: Division (halving)",
+    code:"for (i = n; i >= 1; i = Math.floor(i / 2))\n{\n    stmt;\n}",
+    trace:(n)=>{const r=[];for(let i=n;i>=1;i=Math.floor(i/2))r.push({i:i,op:1});return r;},
+    derive:["i starts at n and halves each iteration: i = n, n/2, n/4, ..., 1.","After k iterations: i = n / 2<sup>k</sup>.","Loop stops when n / 2<sup>k</sup> < 1, i.e., 2<sup>k</sup> > n.","So k > log<sub>2</sub>(n) &rArr; k = &lfloor;log<sub>2</sub>(n)&rfloor; + 1.","Same as i*2 but in reverse! &rArr; <span class='bigO'>O(log n)</span>"],
+    iters:n=>{let c=0;for(let i=n;i>=1;i=Math.floor(i/2))c++;return c;},bigO:"O(log n)"},
+  {title:"Ex 7: Linear \u00D7 Logarithmic",
+    code:"for (i = 0; i < n; i++)\n{\n    for (j = 1; j < n; j = j * 2)\n    {\n        stmt;\n    }\n}",
+    trace:(n)=>{const r=[];for(let i=0;i<n;i++)for(let j=1;j<n;j*=2)r.push({i:i,j:j,op:1});return r;},
+    derive:["Outer loop: i = 0 to n-1 &rArr; <b>n</b> iterations.","Inner loop: j starts at 1 and doubles &rArr; <b>log<sub>2</sub>(n)</b> iterations.","Inner loop is independent of i (always goes 1 &rarr; n).","Total = n &times; log<sub>2</sub>(n).","T(n) = n + n&middot;log(n) + n&middot;log(n) = n + 2n&middot;log(n)","Dominant term: n&middot;log(n) &rArr; <span class='bigO'>O(n log n)</span>"],
+    iters:n=>{let c=0;for(let i=0;i<n;i++)for(let j=1;j<n;j*=2)c++;return c;},bigO:"O(n log n)"}
+];
+
+// Challenge bank for loop analysis
+const CHALLENGE_BANK=[
+  {code:"for (i = 0; i < n; i += 3) { stmt; }",answer:"O(n)",explain:"i increments by 3 each time: n/3 iterations = O(n)"},
+  {code:"for (i = 1; i < n*n; i++) { stmt; }",answer:"O(n\u00B2)",explain:"Loop runs n\u00B2 times = O(n\u00B2)"},
+  {code:"for (i = 1; i < n; i = i * 3) { stmt; }",answer:"O(log n)",explain:"i triples: 1, 3, 9, 27... After k steps: 3^k = n, so k = log\u2083(n) = O(log n)"},
+  {code:"for (i = n; i > 0; i--) { stmt; }",answer:"O(n)",explain:"i decrements by 1 from n to 1: n iterations = O(n)"},
+  {code:"for (i = 1; i < n; i++)\n  for (j = 1; j < n; j = j * 2)\n    stmt;",answer:"O(n log n)",explain:"Outer: n, Inner: log n. Independent \u2192 n \u00D7 log n = O(n log n)"},
+  {code:"for (i = 0; i < n; i++)\n  for (j = 0; j < n; j++)\n    for (k = 0; k < n; k++)\n      stmt;",answer:"O(n\u00B3)",explain:"Three nested independent loops: n \u00D7 n \u00D7 n = O(n\u00B3)"},
+  {code:"i = n;\nwhile (i > 1) {\n  i = Math.floor(i / 3);\n}",answer:"O(log n)",explain:"i divides by 3: n, n/3, n/9... k = log\u2083(n) = O(log n)"},
+  {code:"for (i = 1; i*i <= n; i++) { stmt; }",answer:"O(\u221An)",explain:"Loop runs while i\u00B2 \u2264 n, so i goes up to \u221An = O(\u221An)"},
+  {code:"for (i = 0; i < n; i++)\n  for (j = i; j < n; j++)\n    stmt;",answer:"O(n\u00B2)",explain:"j runs n-i times. Sum = n + (n-1) + ... + 1 = n(n+1)/2 = O(n\u00B2)"},
+  {code:"for (i = 1; i < n; i = i + i) { stmt; }",answer:"O(log n)",explain:"i doubles (i + i = 2i): same as i *= 2 \u2192 O(log n)"},
+  {code:"x = n;\nwhile (x > 0) { x = x - 5; }",answer:"O(n)",explain:"x decreases by 5 each time: n/5 iterations = O(n)"},
+  {code:"for (i = 2; i < n; i = i * i) { stmt; }",answer:"O(log log n)",explain:"i squares: 2, 4, 16, 256... After k steps: 2^(2^k) = n, so k = log log n"}
+];
+const CHALLENGE_CHOICES=["O(1)","O(log n)","O(\u221An)","O(n)","O(n log n)","O(n\u00B2)"];
+let challengeIdx=0,challengeScore=0,challengeTotal=0,challengeAnswered=false;
+
+let loopIdx=0,loopDeriveStep=0;
+const loopExSel=document.getElementById("loopEx"),loopNSlider=document.getElementById("loopN"),loopNLbl=document.getElementById("loopNLbl");
+const loopCodeEl=document.getElementById("loopCode"),loopTraceEl=document.getElementById("loopTracePanel"),loopDeriveEl=document.getElementById("loopDeriveBox");
+const loopChallengeEl=document.getElementById("loopChallengePanel");
+
+loopExSel.addEventListener("change",()=>{loopIdx=parseInt(loopExSel.value);loopDeriveStep=0;loopRender();});
+loopNSlider.addEventListener("input",()=>{loopNLbl.textContent=loopNSlider.value;loopUpdateStats();});
+document.getElementById("loopTrace").addEventListener("click",loopDoTrace);
+document.getElementById("loopDerive").addEventListener("click",loopDoDerive);
+document.getElementById("loopReset").addEventListener("click",()=>{loopDeriveStep=0;loopCodeEl.style.display="";loopRender();});
+document.getElementById("loopChallenge").addEventListener("click",loopShowChallenge);
+
+function loopRender(){
+  const ex=LOOP_EXAMPLES[loopIdx];
+  loopCodeEl.innerHTML="";
+  ex.code.split("\n").forEach((line,i)=>{
+    const div=document.createElement("div");div.className="cline";
+    div.innerHTML='<span class="ln">'+(i+1)+'</span><span class="code">'+syntaxHL(line)+'</span>';
+    loopCodeEl.appendChild(div);
+  });
+  loopTraceEl.style.display="none";loopTraceEl.innerHTML="";
+  loopDeriveEl.style.display="none";loopDeriveEl.innerHTML="";
+  loopChallengeEl.style.display="none";
+  loopDeriveStep=0;
+  loopUpdateStats();
+}
+
+function loopUpdateStats(){
+  const ex=LOOP_EXAMPLES[loopIdx];
+  const n=parseInt(loopNSlider.value);
+  document.getElementById("loopIters").textContent=ex.iters(n);
+  document.getElementById("loopBigO").textContent=ex.bigO;
+}
+
+async function loopDoTrace(){
+  const ex=LOOP_EXAMPLES[loopIdx];
+  const n=parseInt(loopNSlider.value);
+  const steps=ex.trace(n);
+  loopTraceEl.style.display="block";loopTraceEl.innerHTML="";
+  loopDeriveEl.style.display="none";loopChallengeEl.style.display="none";
+
+  const header=document.createElement("div");
+  header.className="traceRow";header.style.fontWeight="700";header.style.color="var(--muted)";
+  const hasJ=steps.length>0&&steps[0].j!==undefined;
+  const hasP=steps.length>0&&steps[0].p!==undefined;
+  header.innerHTML='<span class="ti">#</span><span class="tv">i</span>'+(hasJ?'<span class="tv">j</span>':'')+(hasP?'<span class="tv">p</span>':'')+'<span class="tc">ops</span>';
+  loopTraceEl.appendChild(header);
+
+  let ops=0;
+  for(let k=0;k<steps.length&&k<500;k++){
+    const s=steps[k];ops+=s.op;
+    const row=document.createElement("div");row.className="traceRow";
+    row.innerHTML='<span class="ti">'+(k+1)+'</span><span class="tv">'+s.i+'</span>'+(hasJ?'<span class="tv">'+s.j+'</span>':'')+(hasP?'<span class="tv">'+s.p+'</span>':'')+'<span class="tc">'+ops+'</span>';
+    loopTraceEl.appendChild(row);
+    loopTraceEl.scrollTop=loopTraceEl.scrollHeight;
+    if(steps.length<=50)await sleep(clamp(800/steps.length,20,120));
+  }
+  if(steps.length>500){
+    const more=document.createElement("div");more.className="traceRow";more.style.color="var(--muted)";
+    more.textContent="... "+(steps.length-500)+" more rows (total: "+steps.length+" iterations)";
+    loopTraceEl.appendChild(more);
+  }
+}
+
+function loopDoDerive(){
+  const ex=LOOP_EXAMPLES[loopIdx];
+  loopDeriveEl.style.display="block";loopTraceEl.style.display="none";loopChallengeEl.style.display="none";
+  if(loopDeriveStep===0){
+    loopDeriveEl.innerHTML='<h3>Step-by-Step Derivation</h3>';
+    ex.derive.forEach((_,i)=>{
+      const d=document.createElement("div");d.className="dstep";d.dataset.idx=i;
+      loopDeriveEl.appendChild(d);
+    });
+  }
+  if(loopDeriveStep<ex.derive.length){
+    const d=loopDeriveEl.querySelector('.dstep[data-idx="'+loopDeriveStep+'"]');
+    if(d){d.innerHTML=ex.derive[loopDeriveStep];d.classList.add("show");}
+    loopDeriveStep++;
+  }
+}
+
+function loopShowChallenge(){
+  loopChallengeEl.style.display="block";loopTraceEl.style.display="none";loopDeriveEl.style.display="none";
+  loopCodeEl.style.display="none";
+  challengeIdx=Math.floor(Math.random()*CHALLENGE_BANK.length);
+  challengeAnswered=false;
+  const ch=CHALLENGE_BANK[challengeIdx];
+  let html='<h3>Challenge! What is the complexity?</h3>';
+  html+='<div class="codeBlock" style="margin-bottom:10px;font-size:13px;line-height:1.6;white-space:pre;">'+syntaxHL(ch.code)+'</div>';
+  html+='<div class="choiceGrid">';
+  CHALLENGE_CHOICES.forEach(c=>{
+    html+='<div class="choiceBtn" data-choice="'+c+'">'+c+'</div>';
+  });
+  html+='</div>';
+  html+='<div id="challengeFB" style="margin-top:8px;"></div>';
+  html+='<div style="margin-top:8px;font-size:12px;color:var(--muted);">Score: '+challengeScore+' / '+challengeTotal+'</div>';
+  loopChallengeEl.innerHTML=html;
+  loopChallengeEl.querySelectorAll(".choiceBtn").forEach(btn=>{
+    btn.addEventListener("click",()=>{
+      if(challengeAnswered)return;
+      challengeAnswered=true;challengeTotal++;
+      const picked=btn.dataset.choice;
+      const correct=ch.answer;
+      if(picked===correct){
+        challengeScore++;btn.classList.add("right");
+        document.getElementById("challengeFB").innerHTML='<div class="challengeFeedback ok">Correct! '+ch.explain+'</div>';
+      } else {
+        btn.classList.add("wrongPick");
+        loopChallengeEl.querySelector('.choiceBtn[data-choice="'+correct+'"]').classList.add("right");
+        document.getElementById("challengeFB").innerHTML='<div class="challengeFeedback nope">Not quite. The answer is <b>'+correct+'</b>. '+ch.explain+'</div>';
+      }
+      setTimeout(()=>{
+        const nextBtn=document.createElement("button");nextBtn.textContent="Next Challenge";nextBtn.className="sec";nextBtn.style.marginTop="8px";
+        nextBtn.addEventListener("click",loopShowChallenge);
+        document.getElementById("challengeFB").appendChild(nextBtn);
+      },300);
+    });
+  });
+}
+
+// ===================== S3: GROWTH RATES =====================
+const GR_FNS=[
+  {label:"log n",fn:n=>Math.log2(Math.max(1,n)),color:"#6aa9ff"},
+  {label:"n",fn:n=>n,color:"#64f0c8"},
+  {label:"n\u00B2",fn:n=>n*n,color:"#ffd166"},
+  {label:"n\u00B3",fn:n=>n*n*n,color:"#ff9f43"},
+  {label:"n\u2074",fn:n=>Math.pow(n,4),color:"#c77dff"},
+  {label:"2\u207F",fn:n=>Math.pow(2,Math.min(n,50)),color:"#ff5c7a"},
+];
+
+let grLogScale=false,grRacing=false;
+const grNSlider=document.getElementById("grN"),grNLbl=document.getElementById("grNLbl");
+const grTableEl=document.getElementById("grTable"),grSvgEl=document.getElementById("grSvg");
+const grLogToggle=document.getElementById("grLog");
+
+grNSlider.addEventListener("input",()=>{grNLbl.textContent=grNSlider.value;grRender();});
+grLogToggle.addEventListener("click",()=>{grLogScale=!grLogScale;grLogToggle.classList.toggle("on",grLogScale);grRender();});
+document.getElementById("grRace").addEventListener("click",grDoRace);
+
+function fmtTime(us){
+  if(us<1)return"<1 \u00B5s";
+  if(us<1000)return Math.round(us)+" \u00B5s";
+  const ms=us/1000;if(ms<1000)return ms.toFixed(1)+" ms";
+  const s=ms/1000;if(s<60)return s.toFixed(1)+" s";
+  const min=s/60;if(min<60)return min.toFixed(1)+" min";
+  const hr=min/60;if(hr<24)return hr.toFixed(1)+" hr";
+  const day=hr/24;if(day<365)return day.toFixed(1)+" days";
+  const yr=day/365.25;if(yr<1e6)return yr.toFixed(1)+" yr";
+  if(yr<1e9)return(yr/1e6).toFixed(1)+"M yr";
+  return(yr/1e9).toFixed(1)+"B yr";
+}
+
+function timeClass(us){
+  if(us<1e6)return"tOk";      // < 1 second
+  if(us<3.6e9)return"tWarn";   // < 1 hour
+  return"tBad";
+}
+
+function grRender(){
+  const n=parseInt(grNSlider.value);
+  // Table
+  let html="<thead><tr><th><span class='m'>n</span></th>";
+  GR_FNS.forEach(f=>{html+='<th style="color:'+f.color+'">'+f.label+'</th>';});
+  html+="</tr></thead><tbody>";
+  const rows=[1,2,5,10,Math.min(n,20),n];
+  const unique=[...new Set(rows)].sort((a,b)=>a-b);
+  unique.forEach(v=>{
+    html+='<tr><td style="font-weight:700;">'+v+'</td>';
+    GR_FNS.forEach(f=>{
+      const val=f.fn(v);
+      let cls="ok";if(val>1e6)cls="explode";else if(val>1e3)cls="warn";
+      html+='<td class="'+cls+'">'+fmtN(Math.round(val))+'</td>';
+    });
+    html+="</tr>";
+  });
+  html+="</tbody>";
+  grTableEl.innerHTML=html;
+
+  // Time panel
+  const tg=document.getElementById("grTimeGrid");
+  tg.innerHTML="";
+  GR_FNS.forEach(f=>{
+    const val=f.fn(n);const us=val;
+    const tc=timeClass(us);
+    tg.innerHTML+='<div class="timeCell '+tc+'"><div class="tcLabel">'+f.label+'</div><div class="tcVal">'+fmtTime(us)+'</div></div>';
+  });
+
+  grRenderChart(n);
+}
+
+function grRenderChart(upToN){
+  clearSvg(grSvgEl);
+  const n=upToN||parseInt(grNSlider.value);
+  const W=1000,H=350,padL=70,padR=30,padT=25,padB=45;
+  const plotW=W-padL-padR,plotH=H-padT-padB;
+  const maxN=parseInt(grNSlider.max);
+
+  for(let i=1;i<=4;i++)grSvgEl.appendChild(svgEl("line",{x1:padL,y1:padT+plotH*i/5,x2:W-padR,y2:padT+plotH*i/5,class:"gridLine"}));
+  grSvgEl.appendChild(svgEl("line",{x1:padL,y1:padT,x2:padL,y2:H-padB,class:"axisLine"}));
+  grSvgEl.appendChild(svgEl("line",{x1:padL,y1:H-padB,x2:W-padR,y2:H-padB,class:"axisLine"}));
+
+  let yMax=1;
+  GR_FNS.forEach(f=>{const v=f.fn(n);if(isFinite(v)&&v>yMax)yMax=v;});
+  yMax*=1.1;
+
+  const mapX=v=>padL+(v/maxN)*plotW;
+  const mapY=grLogScale
+    ?(v=>{if(v<=0)return H-padB;const lm=Math.log10(Math.max(yMax,10)),lv=Math.log10(Math.max(v,1));return padT+plotH-lv/lm*plotH;})
+    :(v=>padT+plotH-Math.min(v,yMax)/yMax*plotH);
+
+  for(let v=0;v<=maxN;v+=10){
+    const t=svgEl("text",{x:mapX(v),y:H-padB+16,"text-anchor":"middle","font-size":"10",fill:"rgba(183,192,255,0.6)"});
+    t.textContent=v;grSvgEl.appendChild(t);
+  }
+  const xL=svgEl("text",{x:padL+plotW/2,y:H-6,"text-anchor":"middle","font-size":"12",fill:"rgba(183,192,255,0.7)"});
+  xL.textContent="n";grSvgEl.appendChild(xL);
+
+  GR_FNS.forEach(f=>{
+    let d="";
+    for(let i=1;i<=n;i++){
+      const x=mapX(i),y=mapY(f.fn(i));
+      d+=(i===1?"M":"L")+" "+x+" "+clamp(y,padT-5,H-padB+5);
+    }
+    if(d)grSvgEl.appendChild(svgEl("path",{d:d,stroke:f.color,"stroke-width":"2.5","stroke-linecap":"round",fill:"none"}));
+    if(n>=1){
+      const ex=mapX(n),ey=mapY(f.fn(n));
+      grSvgEl.appendChild(svgEl("circle",{cx:ex,cy:clamp(ey,padT-5,H-padB+5),r:4,fill:f.color}));
+      const lb=svgEl("text",{x:ex+8,y:clamp(ey+4,padT+10,H-padB-5),"text-anchor":"start","font-size":"11","font-weight":"700",fill:f.color});
+      lb.textContent=f.label;grSvgEl.appendChild(lb);
+    }
+  });
+}
+
+async function grDoRace(){
+  if(grRacing)return;grRacing=true;
+  const targetN=parseInt(grNSlider.value);
+  for(let cur=1;cur<=targetN;cur++){
+    grRenderChart(cur);
+    await sleep(clamp(2000/targetN,15,100));
+  }
+  grRacing=false;
+}
+
+// ===================== S4: ASYMPTOTIC NOTATION =====================
+let asNotation="O";
+const asFnSel=document.getElementById("asFn"),asGnSel=document.getElementById("asGn");
+const asCSlider=document.getElementById("asC"),asN0Slider=document.getElementById("asN0");
+const asC2Slider=document.getElementById("asC2");
+const asC2Row=document.getElementById("asC2Row");
+const asSvgEl=document.getElementById("asSvg"),asDefEl=document.getElementById("asDef");
+
+const AS_FNS={"3n+5":n=>3*n+5,"2n2+3n+1":n=>2*n*n+3*n+1,"nlogn+10":n=>n*Math.log2(Math.max(1,n))+10,"n3-2n":n=>n*n*n-2*n};
+const AS_GNS={"n":n=>n,"n2":n=>n*n,"nlogn":n=>n*Math.log2(Math.max(1,n)),"n3":n=>n*n*n};
+const AS_GN_LABELS={"n":"n","n2":"n\u00B2","nlogn":"n log n","n3":"n\u00B3"};
+const AS_FN_LABELS={"3n+5":"3n+5","2n2+3n+1":"2n\u00B2+3n+1","nlogn+10":"n log n+10","n3-2n":"n\u00B3\u22122n"};
+
+document.querySelectorAll(".notationBtn").forEach(b=>b.addEventListener("click",()=>{
+  asNotation=b.dataset.n;
+  document.querySelectorAll(".notationBtn").forEach(x=>x.classList.toggle("active",x.dataset.n===asNotation));
+  asC2Row.style.display=asNotation==="Th"?"grid":"none";
+  asRender();
+}));
+[asFnSel,asGnSel].forEach(el=>el.addEventListener("change",asRender));
+asCSlider.addEventListener("input",()=>{document.getElementById("asCLbl").textContent=asCSlider.value;asRender();});
+asN0Slider.addEventListener("input",()=>{document.getElementById("asN0Lbl").textContent=asN0Slider.value;asRender();});
+asC2Slider.addEventListener("input",()=>{document.getElementById("asC2Lbl").textContent=asC2Slider.value;asRender();});
+
+// Asymptotic challenges
+const AS_CHALLENGES=[
+  {task:"Prove f(n) = 3n+5 is O(n)",fn:"3n+5",gn:"n",notation:"O",hintC:4,hintN0:5,hint:"Try c \u2265 4 and n\u2080 \u2265 5"},
+  {task:"Prove f(n) = 2n\u00B2+3n+1 is O(n\u00B2)",fn:"2n2+3n+1",gn:"n2",notation:"O",hintC:3,hintN0:4,hint:"Try c \u2265 3 and n\u2080 \u2265 4"},
+  {task:"Prove f(n) = n log n + 10 is \u03A9(n log n)",fn:"nlogn+10",gn:"nlogn",notation:"Om",hintC:1,hintN0:1,hint:"Try c = 1 and n\u2080 = 1"},
+  {task:"Prove f(n) = 2n\u00B2+3n+1 is \u0398(n\u00B2)",fn:"2n2+3n+1",gn:"n2",notation:"Th",hintC:2,hintN0:4,hint:"Try c\u2081 = 2, c\u2082 = 6, n\u2080 = 1"},
+];
+let asChallengeIdx=0;
+document.getElementById("asChallenge").addEventListener("click",asShowChallenge);
+
+function asShowChallenge(){
+  const panel=document.getElementById("asChallengePanel");
+  const ch=AS_CHALLENGES[asChallengeIdx%AS_CHALLENGES.length];
+  asChallengeIdx++;
+  // Set dropdowns
+  asFnSel.value=ch.fn;asGnSel.value=ch.gn;
+  asNotation=ch.notation;
+  document.querySelectorAll(".notationBtn").forEach(x=>x.classList.toggle("active",x.dataset.n===asNotation));
+  asC2Row.style.display=asNotation==="Th"?"grid":"none";
+  asCSlider.value=1;document.getElementById("asCLbl").textContent="1";
+  asN0Slider.value=1;document.getElementById("asN0Lbl").textContent="1";
+  asRender();
+  panel.style.display="block";
+  panel.innerHTML='<div class="challengePanel"><h3>Challenge: '+ch.task+'</h3><p style="font-size:12px;color:var(--muted);margin:0 0 8px;">Adjust the c and n\u2080 sliders until the badge shows "Valid!"</p><button class="sec" id="asHintBtn" style="font-size:12px;">Show Hint</button><div id="asHintText" style="display:none;margin-top:6px;font-size:12px;color:var(--yellow);"></div></div>';
+  document.getElementById("asHintBtn").addEventListener("click",()=>{
+    document.getElementById("asHintText").style.display="block";
+    document.getElementById("asHintText").textContent="Hint: "+ch.hint;
+  });
+}
+
+function asRender(){
+  clearSvg(asSvgEl);
+  const W=1000,H=450,padL=60,padR=30,padT=30,padB=50;
+  const plotW=W-padL-padR,plotH=H-padT-padB;
+
+  const fn=AS_FNS[asFnSel.value];
+  const gn=AS_GNS[asGnSel.value];
+  const c=parseFloat(asCSlider.value);
+  const c2=parseFloat(asC2Slider.value);
+  const n0=parseInt(asN0Slider.value);
+  const maxN=60;
+
+  let yMax=1;
+  for(let i=1;i<=maxN;i++){
+    const fv=fn(i),gv=gn(i);
+    let bound=c*gv;if(asNotation==="Th")bound=Math.max(c*gv,c2*gv);
+    const mv=Math.max(fv,bound);if(isFinite(mv)&&mv>yMax)yMax=mv;
+  }
+  yMax*=1.1;
+
+  const mapX=v=>padL+(v/maxN)*plotW;
+  const mapY=v=>padT+plotH-Math.min(Math.max(v,0),yMax)/yMax*plotH;
+
+  for(let i=1;i<=4;i++)asSvgEl.appendChild(svgEl("line",{x1:padL,y1:padT+plotH*i/5,x2:W-padR,y2:padT+plotH*i/5,class:"gridLine"}));
+  asSvgEl.appendChild(svgEl("line",{x1:padL,y1:padT,x2:padL,y2:H-padB,class:"axisLine"}));
+  asSvgEl.appendChild(svgEl("line",{x1:padL,y1:H-padB,x2:W-padR,y2:H-padB,class:"axisLine"}));
+
+  const n0x=mapX(n0);
+  asSvgEl.appendChild(svgEl("line",{x1:n0x,y1:padT,x2:n0x,y2:H-padB,stroke:"rgba(255,159,67,0.6)","stroke-width":"2","stroke-dasharray":"6,4"}));
+  const n0t=svgEl("text",{x:n0x,y:H-padB+16,"text-anchor":"middle","font-size":"12","font-weight":"700",fill:"rgba(255,159,67,0.8)"});
+  n0t.textContent="n\u2080="+n0;asSvgEl.appendChild(n0t);
+
+  // Shading
+  for(let i=n0;i<maxN;i++){
+    const x1=mapX(i),x2=mapX(i+1);
+    const fv=fn(i),gv=gn(i);
+    let valid;
+    if(asNotation==="O")valid=fv<=c*gv;
+    else if(asNotation==="Om")valid=fv>=c*gv;
+    else{const lo=Math.min(c*gv,c2*gv),hi=Math.max(c*gv,c2*gv);valid=fv>=lo&&fv<=hi;}
+    asSvgEl.appendChild(svgEl("rect",{x:x1,y:padT,width:x2-x1,height:plotH,fill:valid?"rgba(100,240,200,0.08)":"rgba(255,92,122,0.12)"}));
+  }
+
+  function drawCurve(evalFn,color,dash,label){
+    let d="";
+    for(let i=1;i<=maxN;i++){
+      const x=mapX(i),y=mapY(evalFn(i));
+      d+=(i===1?"M":"L")+" "+x+" "+clamp(y,padT-5,H-padB+5);
+    }
+    const attrs={d:d,stroke:color,"stroke-width":"2.5","stroke-linecap":"round",fill:"none"};
+    if(dash)attrs["stroke-dasharray"]="8,4";
+    asSvgEl.appendChild(svgEl("path",attrs));
+    const ey=mapY(evalFn(maxN));
+    const lb=svgEl("text",{x:W-padR-5,y:clamp(ey-6,padT+10,H-padB-5),"text-anchor":"end","font-size":"12","font-weight":"700",fill:color});
+    lb.textContent=label;asSvgEl.appendChild(lb);
+  }
+
+  drawCurve(fn,"#00b4d8",false,"f(n) = "+AS_FN_LABELS[asFnSel.value]);
+  if(asNotation==="Th"){
+    drawCurve(n=>c*gn(n),"#64f0c8",true,"c\u2081\u00B7g(n), c\u2081="+c);
+    drawCurve(n=>c2*gn(n),"#c77dff",true,"c\u2082\u00B7g(n), c\u2082="+c2);
+  } else {
+    drawCurve(n=>c*gn(n),"#64f0c8",true,"c\u00B7g(n), c="+c);
+  }
+
+  const xL=svgEl("text",{x:padL+plotW/2,y:H-8,"text-anchor":"middle","font-size":"13",fill:"rgba(183,192,255,0.7)"});
+  xL.textContent="n";asSvgEl.appendChild(xL);
+
+  // Validity check
+  let valid=true;
+  for(let i=n0;i<=maxN;i++){
+    const fv=fn(i),gv=gn(i);
+    if(asNotation==="O"&&fv>c*gv){valid=false;break;}
+    if(asNotation==="Om"&&fv<c*gv){valid=false;break;}
+    if(asNotation==="Th"){const lo=Math.min(c*gv,c2*gv),hi=Math.max(c*gv,c2*gv);if(fv<lo||fv>hi){valid=false;break;}}
+  }
+
+  const gnLabel=AS_GN_LABELS[asGnSel.value],fnLabel=AS_FN_LABELS[asFnSel.value];
+  let defHTML="";
+  if(asNotation==="O"){
+    defHTML='<div class="formal">O(g(n)) = { f(n) : there exist positive constants <b>c</b> and <b>n<sub>0</sub></b> such that<br>0 &le; f(n) &le; c&middot;g(n) for all n &ge; n<sub>0</sub> }</div>';
+    defHTML+='<div style="margin-top:8px;">f(n) = '+fnLabel+' is <b>O('+gnLabel+')</b> means g(n) = '+gnLabel+' is an <b>upper bound</b>.</div>';
+  } else if(asNotation==="Om"){
+    defHTML='<div class="formal">&Omega;(g(n)) = { f(n) : there exist positive constants <b>c</b> and <b>n<sub>0</sub></b> such that<br>0 &le; c&middot;g(n) &le; f(n) for all n &ge; n<sub>0</sub> }</div>';
+    defHTML+='<div style="margin-top:8px;">f(n) = '+fnLabel+' is <b>&Omega;('+gnLabel+')</b> means g(n) = '+gnLabel+' is a <b>lower bound</b>.</div>';
+  } else {
+    defHTML='<div class="formal">&Theta;(g(n)) = { f(n) : there exist positive constants <b>c<sub>1</sub></b>, <b>c<sub>2</sub></b>, and <b>n<sub>0</sub></b> such that<br>0 &le; c<sub>1</sub>&middot;g(n) &le; f(n) &le; c<sub>2</sub>&middot;g(n) for all n &ge; n<sub>0</sub> }</div>';
+    defHTML+='<div style="margin-top:8px;">f(n) = '+fnLabel+' is <b>&Theta;('+gnLabel+')</b> means g(n) = '+gnLabel+' is an <b>asymptotically tight bound</b>.</div>';
+  }
+  defHTML+='<div class="validBadge '+(valid?"yes":"no")+'">'+(valid?"Valid! The bound holds for all n \u2265 n\u2080 shown.":"Not valid \u2014 there are violations after n\u2080. Adjust c or n\u2080.")+'</div>';
+  asDefEl.innerHTML=defHTML;
+}
+
+// ===================== S5: REVIEW & QUIZ =====================
+const HIERARCHY=[
+  {cls:"O(1)",color:"#64f0c8",desc:"Constant time",algo:"Array access, hash lookup"},
+  {cls:"O(log n)",color:"#6aa9ff",desc:"Logarithmic",algo:"Binary search"},
+  {cls:"O(\u221An)",color:"#00b4d8",desc:"Square root",algo:"Trial division primality"},
+  {cls:"O(n)",color:"#a0e426",desc:"Linear",algo:"Linear search, single loop"},
+  {cls:"O(n log n)",color:"#ffd166",desc:"Linearithmic",algo:"Merge sort, heap sort"},
+  {cls:"O(n\u00B2)",color:"#ff9f43",desc:"Quadratic",algo:"Bubble sort, selection sort"},
+  {cls:"O(n\u00B3)",color:"#c77dff",desc:"Cubic",algo:"Matrix multiplication"},
+  {cls:"O(2\u207F)",color:"#ff5c7a",desc:"Exponential",algo:"Subset enumeration"},
+  {cls:"O(n!)",color:"#ff2d55",desc:"Factorial",algo:"Permutation generation"},
+];
+
+function quizInit(){
+  const ladder=document.getElementById("quizLadder");
+  ladder.innerHTML="";
+  HIERARCHY.forEach(h=>{
+    ladder.innerHTML+='<div class="ladderStep"><span class="lColor" style="background:'+h.color+';"></span><span class="lClass" style="color:'+h.color+';">'+h.cls+'</span><span class="lDesc">'+h.desc+'</span><span class="lAlgo">'+h.algo+'</span></div>';
+  });
+}
+
+// Quiz question bank
+const QUIZ_BANK=[
+  {q:"What is the time complexity of a single for loop from 1 to n?",opts:["O(1)","O(log n)","O(n)","O(n\u00B2)"],ans:2,topic:"loops"},
+  {q:"What is T(n) for: S=0; for(i=0;i<n;i++) S+=A[i]; return S;",opts:["n+1","2n+3","n\u00B2+1","3n+2"],ans:1,topic:"freq"},
+  {q:"What is the complexity of: for(i=1;i<n;i*=2) stmt;",opts:["O(n)","O(n\u00B2)","O(log n)","O(\u221An)"],ans:2,topic:"loops"},
+  {q:"True or False: 5n + 3 = O(n\u00B2)",opts:["True","False","Only for large n","Undefined"],ans:0,topic:"asymp",explain:"5n+3 \u2264 c\u00B7n\u00B2 for c=1, n\u2080=6. Big-O is an upper bound; any higher class also works."},
+  {q:"What is the complexity of nested independent loops: for i..n { for j..n { stmt } }?",opts:["O(n)","O(n log n)","O(n\u00B2)","O(2\u207F)"],ans:2,topic:"loops"},
+  {q:"Which grows faster: n log n or n\u221An?",opts:["n log n","n\u221An","They're the same","Depends on n"],ans:1,topic:"growth",explain:"n\u221An = n^1.5 which grows faster than n log n for large n."},
+  {q:"What does Big-\u03A9 represent?",opts:["Upper bound","Lower bound","Tight bound","Average case"],ans:1,topic:"asymp"},
+  {q:"The loop: for(i=1; p<=n; i++) p+=i; has complexity:",opts:["O(n)","O(log n)","O(\u221An)","O(n\u00B2)"],ans:2,topic:"loops"},
+  {q:"If f(n) = \u0398(g(n)), then which is also true?",opts:["f(n) = O(g(n)) only","f(n) = \u03A9(g(n)) only","Both O and \u03A9","Neither"],ans:2,topic:"asymp"},
+  {q:"What is the complexity of matrix multiplication (triple-nested loops over n)?",opts:["O(n)","O(n\u00B2)","O(n\u00B3)","O(n log n)"],ans:2,topic:"freq"},
+  {q:"At what approximate n does 2\u207F overtake n\u2074?",opts:["n = 5","n = 10","n = 17","n = 50"],ans:2,topic:"growth"},
+  {q:"What is the loop count for: for(i=n; i>=1; i=i/2)?",opts:["n","n/2","log\u2082(n)+1","2\u207F"],ans:2,topic:"loops"},
+  {q:"Drop lower-order terms: 3n\u00B3 + 2n\u00B2 + 5n + 7 = ?",opts:["O(n)","O(n\u00B2)","O(n\u00B3)","O(3n\u00B3)"],ans:2,topic:"freq"},
+  {q:"What does the Frequency Count Method count?",opts:["Lines of code","Execution time in ms","Number of times each statement executes","Memory used"],ans:2,topic:"freq"},
+  {q:"for(i=2; i<n; i=i*i) — complexity?",opts:["O(n)","O(log n)","O(log log n)","O(\u221An)"],ans:2,topic:"loops"},
+  {q:"If each operation takes 1\u00B5s and n=20, how long does an O(2\u207F) algorithm take?",opts:["20 \u00B5s","400 \u00B5s","~1 second","~1 million \u00B5s"],ans:3,topic:"growth",explain:"2\u00B2\u2070 = 1,048,576 \u00B5s \u2248 1 second"},
+  {q:"In Big-O notation, O(5n) simplifies to:",opts:["O(5n)","O(n)","O(5)","O(n/5)"],ans:1,topic:"asymp"},
+  {q:"The sum 1+2+3+...+n equals:",opts:["n\u00B2","n(n+1)/2","2\u207F","n log n"],ans:1,topic:"loops"},
+  {q:"What is the tightest bound for: for(i=0;i<n;i++) for(j=0;j<i;j++) stmt;",opts:["O(n)","O(n log n)","O(n\u00B2)","O(n\u00B3)"],ans:2,topic:"loops"},
+  {q:"f(n) = 3n+5 is O(n). What are valid values of c and n\u2080?",opts:["c=3, n\u2080=1","c=4, n\u2080=5","c=1, n\u2080=1","c=8, n\u2080=1"],ans:1,topic:"asymp",explain:"3n+5 \u2264 4n when n \u2265 5: 3(5)+5=20 \u2264 4(5)=20. Works!"},
+];
+
+let quizQuestions=[],quizAnswered=0,quizCorrect=0;
+
+function shuffleArray(arr){for(let i=arr.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]];}return arr;}
+
+document.getElementById("quizStart").addEventListener("click",startQuiz);
+document.getElementById("quizNew").addEventListener("click",startQuiz);
+
+function startQuiz(){
+  quizAnswered=0;quizCorrect=0;
+  quizQuestions=shuffleArray([...QUIZ_BANK]).slice(0,10);
+  document.getElementById("quizScore").textContent="0 / 10";
+  document.getElementById("quizProg").textContent="0 / 10";
+  renderQuiz();
+}
+
+function renderQuiz(){
+  const area=document.getElementById("quizArea");
+  area.innerHTML='<h3>Quiz — 10 Questions</h3>';
+  quizQuestions.forEach((q,qi)=>{
+    let qhtml='<div class="quizQ" id="qq'+qi+'"><div class="qText"><b>Q'+(qi+1)+'.</b> '+q.q+'</div>';
+    if(q.code)qhtml+='<div class="qCode">'+q.code+'</div>';
+    qhtml+='<div class="quizOpts">';
+    q.opts.forEach((opt,oi)=>{
+      qhtml+='<div class="quizOpt" data-qi="'+qi+'" data-oi="'+oi+'">'+opt+'</div>';
+    });
+    qhtml+='</div><div class="qFeedback" id="qfb'+qi+'" style="display:none;"></div></div>';
+    area.innerHTML+=qhtml;
+  });
+
+  area.querySelectorAll(".quizOpt").forEach(btn=>{
+    btn.addEventListener("click",()=>{
+      const qi=parseInt(btn.dataset.qi),oi=parseInt(btn.dataset.oi);
+      const qEl=document.getElementById("qq"+qi);
+      if(qEl.dataset.done)return;
+      qEl.dataset.done="1";
+      quizAnswered++;
+
+      const q=quizQuestions[qi];
+      const fb=document.getElementById("qfb"+qi);
+      fb.style.display="block";
+
+      qEl.querySelectorAll(".quizOpt").forEach((o,idx)=>{
+        if(idx===q.ans)o.classList.add("correct");
+        if(idx===oi&&oi!==q.ans)o.classList.add("incorrect");
+      });
+
+      if(oi===q.ans){
+        quizCorrect++;
+        fb.className="qFeedback ok";fb.textContent="Correct!"+(q.explain?" "+q.explain:"");
+      } else {
+        fb.className="qFeedback nope";fb.textContent="Incorrect. The answer is: "+q.opts[q.ans]+"."+(q.explain?" "+q.explain:"");
+      }
+
+      document.getElementById("quizScore").textContent=quizCorrect+" / 10";
+      document.getElementById("quizProg").textContent=quizAnswered+" / 10";
+
+      if(quizAnswered===10){
+        const pct=Math.round(quizCorrect/10*100);
+        let msg;if(pct>=80)msg="Excellent work!";else if(pct>=60)msg="Good job, keep practicing!";else msg="Review the material and try again.";
+        area.innerHTML+='<div class="scoreCard"><div class="bigScore">'+quizCorrect+' / 10</div><div class="scoreSub">'+pct+'% — '+msg+'</div><button onclick="startQuiz()" style="margin-top:10px;">Try Again</button></div>';
+      }
+    });
+  });
+}
+
+// ===================== INIT =====================
+fcRender();
+loopRender();
+grRender();
+asRender();
+quizInit();
+
+})();
+</script>
+</body>
+</html>
